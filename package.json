@@ -1,0 +1,16 @@
+{
+  "name": "agent-arena",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI agent economy with x402 micropayments, on-chain identity, and reputation on Avalanche",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:x402": "cd x402-server && npm run dev",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:x402\"",
+    "build": "cd frontend && npm run build",
+    "test:contracts": "cd contracts && forge test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
