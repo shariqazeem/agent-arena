@@ -13,8 +13,9 @@ export interface Agent {
   endpoint: string;
   pricePerQuery: string;
   isActive: boolean;
-  owner?: string;
-  registeredAt?: number;
+  owner: string;
+  registeredAt: number;
+  capabilities?: string[];
   reputation: AgentReputation;
 }
 
@@ -45,6 +46,7 @@ export interface OrchestrationStep {
   timestamp?: number;
   duration?: number;
   result?: Record<string, unknown>;
+  txHash?: string;
 }
 
 export interface OrchestrationResult {
@@ -58,8 +60,11 @@ export interface OrchestrationResult {
       action: 'BUY' | 'SELL' | 'HOLD';
       confidence: number;
       reasoning: string;
+      riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH';
+      timeframe?: string;
     }>;
     summary: string;
+    riskDisclaimer?: string;
   } | null;
   totalCost: string;
   duration: number;

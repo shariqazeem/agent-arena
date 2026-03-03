@@ -8,12 +8,18 @@ export const REPUTATION_MANAGER_ADDRESS = (process.env.NEXT_PUBLIC_REPUTATION_MA
 export const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x5425890298aed601595a70AB815c96711a31Bc65') as `0x${string}`;
 export const X402_SERVER_URL = process.env.NEXT_PUBLIC_X402_SERVER_URL || 'http://localhost:4402';
 
-export const SERVICE_TYPES: Record<ServiceType, { label: string; icon: string; color: string }> = {
+export const SERVICE_TYPES: Record<number, { label: string; icon: string; color: string }> = {
   [ServiceType.DataAnalysis]: { label: 'Data Analysis', icon: '📊', color: 'text-foreground-secondary' },
   [ServiceType.NewsSummary]: { label: 'News Summary', icon: '📰', color: 'text-foreground-secondary' },
   [ServiceType.TradingSignal]: { label: 'Trading Signal', icon: '📈', color: 'text-foreground-secondary' },
   [ServiceType.Sentiment]: { label: 'Sentiment', icon: '🧠', color: 'text-foreground-secondary' },
 };
+
+const FALLBACK_SERVICE_TYPE = { label: 'Agent', icon: '🤖', color: 'text-foreground-secondary' };
+
+export function getServiceType(n: number): { label: string; icon: string; color: string } {
+  return SERVICE_TYPES[n] || FALLBACK_SERVICE_TYPE;
+}
 
 export const NETWORK_BADGES = [
   { label: 'Avalanche Fuji' },

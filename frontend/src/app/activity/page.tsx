@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useActivity } from '@/hooks/useActivity';
-import { timeAgo } from '@/lib/utils';
+import { timeAgo, snowtraceUrl } from '@/lib/utils';
 
 const TYPE_CONFIG: Record<string, { label: string }> = {
   x402_payment: { label: 'Payment' },
@@ -78,12 +78,24 @@ export default function ActivityPage() {
                   <span className="font-medium text-foreground">{activity.fromAgent}</span>
                   {activity.toAgent && (
                     <>
-                      <span className="text-foreground-tertiary">→</span>
+                      <span className="text-foreground-tertiary">&rarr;</span>
                       <span className="text-foreground-secondary">{activity.toAgent}</span>
                     </>
                   )}
                 </div>
-                <p className="text-[13px] text-foreground-tertiary truncate mt-0.5">{activity.description}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[13px] text-foreground-tertiary truncate">{activity.description}</p>
+                  {activity.txHash && (
+                    <a
+                      href={snowtraceUrl('tx', activity.txHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-accent hover:underline shrink-0"
+                    >
+                      View on Snowtrace
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="text-right shrink-0">
                 {parseFloat(activity.amount) > 0 && (

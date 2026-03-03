@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Agent } from '@/types/agent';
-import { SERVICE_TYPES } from '@/lib/constants';
+import { getServiceType } from '@/lib/constants';
 import ReputationBar from './ReputationBar';
 
 export default function AgentCard({ agent, index = 0 }: { agent: Agent; index?: number }) {
-  const service = SERVICE_TYPES[agent.serviceType];
+  const service = getServiceType(agent.serviceType);
 
   return (
     <motion.div
@@ -20,13 +20,13 @@ export default function AgentCard({ agent, index = 0 }: { agent: Agent; index?: 
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-[22px] bg-background-secondary">
-                {service?.icon || '🤖'}
+                {service.icon}
               </div>
               <div>
                 <h3 className="text-[17px] font-semibold text-foreground group-hover:text-accent transition-colors duration-300 tracking-tight">
                   {agent.name}
                 </h3>
-                <p className="text-[12px] text-foreground-tertiary mt-0.5">{service?.label || 'Agent'}</p>
+                <p className="text-[12px] text-foreground-tertiary mt-0.5">{service.label}</p>
               </div>
             </div>
             <div className="text-right">
@@ -35,7 +35,16 @@ export default function AgentCard({ agent, index = 0 }: { agent: Agent; index?: 
             </div>
           </div>
 
-          <p className="text-[14px] text-foreground-secondary leading-relaxed mb-6 line-clamp-2">{agent.description}</p>
+          <p className="text-[14px] text-foreground-secondary leading-relaxed mb-4 line-clamp-2">{agent.description}</p>
+
+          <div className="flex items-center gap-2 mb-6">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-accent/8 text-accent">
+              x402 pay-per-use
+            </span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium bg-background-secondary text-foreground-tertiary">
+              USDC
+            </span>
+          </div>
 
           <ReputationBar reputation={agent.reputation} />
 

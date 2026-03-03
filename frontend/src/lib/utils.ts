@@ -33,3 +33,7 @@ export function timeAgo(ts: number): string {
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+export function snowtraceUrl(type: 'tx' | 'address' | 'token', hash: string): string {
+  return `https://testnet.snowscan.xyz/${type}/${hash}`;
+}

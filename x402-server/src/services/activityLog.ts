@@ -40,6 +40,21 @@ class ActivityLog {
     return this.records.slice(0, limit);
   }
 
+  markWithdrawn(agentName: string): number {
+    let count = 0;
+    for (const record of this.records) {
+      if (
+        (record.type === 'x402_payment' || record.type === 'agent_call') &&
+        record.toAgent === agentName &&
+        !record.metadata?.withdrawn
+      ) {
+        record.metadata = { ...record.metadata, withdrawn: true };
+        count++;
+      }
+    }
+    return count;
+  }
+
   getStats() {
     const totalTransactions = this.records.length;
     const totalUSDC = this.records

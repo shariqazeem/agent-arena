@@ -7,10 +7,13 @@ import { paymentMiddleware } from 'x402-express';
 import type { Resource } from 'x402-express';
 import { agentsRouter } from './routes/agents.js';
 import { activityRouter } from './routes/activity.js';
+import { queryRouter } from './routes/query.js';
+import { withdrawRouter } from './routes/withdraw.js';
 import { runDataBot } from './agents/dataBot.js';
 import { runNewsBot } from './agents/newsBot.js';
 import { runTraderBot } from './agents/traderBot.js';
 import { runSentimentBot } from './agents/sentimentBot.js';
+import { executeAgent } from './services/agentExecutor.js';
 import { runOrchestration } from './services/orchestrator.js';
 import { activityLog } from './services/activityLog.js';
 import { startDemoLoop } from './services/demoLoop.js';
@@ -61,7 +64,7 @@ app.use(
   )
 );
 
-// x402-protected agent endpoints
+// x402-protected agent endpoints (direct access with payment)
 app.get('/api/agents/0/crypto-analysis', async (_req, res) => {
   try {
     const result = await runDataBot();
@@ -128,43 +131,24 @@ app.get('/api/agents/3/sentiment-analysis', async (_req, res) => {
   }
 });
 
-// Demo hire endpoint — bypasses x402 for hackathon demo
-// The x402 protocol is still demonstrated via agent-to-agent orchestration
-const agentRunners = [
-  { name: 'DataBot', run: () => runDataBot(), price: '0.02' },
-  { name: 'NewsBot', run: () => runNewsBot(), price: '0.01' },
-  { name: 'TraderBot', run: async () => {
-    const data = await runDataBot();
-    const news = await runNewsBot();
-    return runTraderBot(data, news);
-  }, price: '0.05' },
-  { name: 'SentimentBot', run: () => runSentimentBot(), price: '0.03' },
-];
-
+// Unified hire endpoint — works for any registered agent (built-in or user-deployed)
 app.post('/api/hire/:agentId', async (req, res) => {
   const id = parseInt(req.params.agentId);
-  const runner = agentRunners[id];
-  if (!runner) return res.status(404).json({ error: 'Agent not found' });
 
   try {
-    const result = await runner.run();
-    activityLog.add({
-      type: 'agent_call',
-      fromAgent: 'Client',
-      toAgent: runner.name,
-      amount: runner.price,
-      description: `Hired ${runner.name} via demo mode`,
-    });
+    const { result } = await executeAgent(id, req.body);
     res.json(result);
   } catch (err) {
-    console.error(`Hire ${runner.name} failed:`, err);
-    res.status(500).json({ error: `${runner.name} execution failed` });
+    console.error(`Hire agent ${id} failed:`, err);
+    res.status(500).json({ error: (err as Error).message || `Agent ${id} execution failed` });
   }
 });
 
 // Public API routes
 app.use('/api', agentsRouter);
 app.use('/api', activityRouter);
+app.use('/api', queryRouter);
+app.use('/api', withdrawRouter);
 
 // Orchestration endpoint
 app.post('/api/orchestrate', async (_req, res) => {

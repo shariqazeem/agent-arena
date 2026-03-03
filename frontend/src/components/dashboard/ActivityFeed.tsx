@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ActivityRecord } from '@/types/agent';
-import { timeAgo } from '@/lib/utils';
+import { timeAgo, snowtraceUrl } from '@/lib/utils';
 
 export default function ActivityFeed({ activities }: { activities: ActivityRecord[] }) {
   return (
@@ -36,12 +36,24 @@ export default function ActivityFeed({ activities }: { activities: ActivityRecor
                   <span className="text-[14px] font-medium text-foreground">{a.fromAgent}</span>
                   {a.toAgent && (
                     <>
-                      <span className="text-foreground-tertiary text-[13px]">→</span>
+                      <span className="text-foreground-tertiary text-[13px]">&rarr;</span>
                       <span className="text-[14px] text-foreground-secondary">{a.toAgent}</span>
                     </>
                   )}
                 </div>
-                <p className="text-[12px] text-foreground-tertiary truncate mt-0.5">{a.description}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[12px] text-foreground-tertiary truncate">{a.description}</p>
+                  {a.txHash && (
+                    <a
+                      href={snowtraceUrl('tx', a.txHash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-accent hover:underline shrink-0"
+                    >
+                      Snowtrace
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="text-right shrink-0">
                 {parseFloat(a.amount) > 0 && (

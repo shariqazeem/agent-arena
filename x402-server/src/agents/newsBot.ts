@@ -5,63 +5,96 @@ interface NewsArticle {
   source: string;
   url: string;
   publishedAt: string;
+  description?: string;
 }
 
-async function fetchNews(): Promise<NewsArticle[]> {
+async function fetchCryptoNews(): Promise<NewsArticle[]> {
   const apiKey = process.env.NEWSAPI_KEY;
-  if (!apiKey) {
-    return [
-      { title: 'Avalanche Ecosystem Sees Surge in DeFi Activity', source: 'CoinDesk', url: 'https://coindesk.com', publishedAt: new Date().toISOString() },
-      { title: 'Bitcoin ETF Inflows Hit Record High', source: 'The Block', url: 'https://theblock.co', publishedAt: new Date().toISOString() },
-      { title: 'Chainlink CCIP Expands to New Chains', source: 'Decrypt', url: 'https://decrypt.co', publishedAt: new Date().toISOString() },
-      { title: 'AI Agents Gain Traction in Crypto Markets', source: 'CoinTelegraph', url: 'https://cointelegraph.com', publishedAt: new Date().toISOString() },
-      { title: 'USDC Supply Increases as Stablecoin Demand Grows', source: 'Bloomberg', url: 'https://bloomberg.com', publishedAt: new Date().toISOString() },
-    ];
+
+  // Try NewsAPI first
+  if (apiKey) {
+    try {
+      const res = await fetch(
+        `https://newsapi.org/v2/everything?q=(avalanche OR bitcoin OR ethereum OR "AI agents" OR "crypto") AND NOT spam&sortBy=publishedAt&pageSize=10&language=en&apiKey=${apiKey}`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      if (!res.ok) throw new Error(`NewsAPI ${res.status}`);
+      const data = await res.json() as { articles: Array<{ title: string; source: { name: string }; url: string; publishedAt: string; description: string | null }> };
+      return data.articles
+        .filter((a) => a.title && a.title !== '[Removed]')
+        .map((a) => ({
+          title: a.title,
+          source: a.source.name,
+          url: a.url,
+          publishedAt: a.publishedAt,
+          description: a.description || undefined,
+        }));
+    } catch (err) {
+      console.warn('NewsAPI failed:', (err as Error).message);
+    }
   }
 
+  // Fallback: fetch from CoinGecko trending/status
   try {
-    const res = await fetch(
-      `https://newsapi.org/v2/everything?q=cryptocurrency+OR+avalanche+OR+bitcoin&sortBy=publishedAt&pageSize=5&apiKey=${apiKey}`
-    );
-    if (!res.ok) throw new Error(`NewsAPI ${res.status}`);
-    const data = await res.json() as { articles: Array<{ title: string; source: { name: string }; url: string; publishedAt: string }> };
-    return data.articles.map((a) => ({
-      title: a.title,
-      source: a.source.name,
-      url: a.url,
-      publishedAt: a.publishedAt,
-    }));
-  } catch (err) {
-    console.error('NewsAPI error:', err);
-    return [
-      { title: 'Crypto markets show mixed signals today', source: 'Fallback', url: '#', publishedAt: new Date().toISOString() },
-    ];
+    const res = await fetch('https://api.coingecko.com/api/v3/search/trending', {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const data = await res.json() as { coins: Array<{ item: { name: string; symbol: string; score: number } }> };
+      return data.coins.slice(0, 5).map((c) => ({
+        title: `${c.item.name} (${c.item.symbol}) trending — rank #${c.item.score + 1} on CoinGecko`,
+        source: 'CoinGecko Trending',
+        url: `https://coingecko.com/en/coins/${c.item.name.toLowerCase()}`,
+        publishedAt: new Date().toISOString(),
+      }));
+    }
+  } catch {
+    // ignore
   }
+
+  return [
+    { title: 'Live news unavailable — using cached market context', source: 'System', url: '#', publishedAt: new Date().toISOString() },
+  ];
 }
 
-async function summarizeWithGroq(articles: NewsArticle[]): Promise<string> {
+async function analyzeWithGroq(articles: NewsArticle[]): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    return `Top ${articles.length} crypto headlines: ` + articles.map((a) => a.title).join('; ') + '. Market sentiment appears cautiously optimistic.';
+    return `Analyzed ${articles.length} headlines. ` + articles.slice(0, 3).map((a) => a.title).join('. ');
   }
 
   try {
     const groq = new Groq({ apiKey });
-    const headlines = articles.map((a) => `- ${a.title} (${a.source})`).join('\n');
+    const articlesText = articles.map((a, i) =>
+      `${i + 1}. "${a.title}" — ${a.source} (${new Date(a.publishedAt).toLocaleDateString()})${a.description ? `\n   ${a.description.slice(0, 150)}` : ''}`
+    ).join('\n');
 
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: 'You are a crypto news analyst. Summarize the following headlines in 2-3 concise sentences focusing on market impact. Be direct and factual.' },
-        { role: 'user', content: `Summarize these crypto news headlines:\n${headlines}` },
+        {
+          role: 'system',
+          content: `You are NewsBot, an AI crypto news intelligence agent in the Agent Arena marketplace on Avalanche. Your job is to:
+- Distill ${articles.length} news articles into actionable market intelligence
+- Identify the dominant narrative (bullish/bearish catalysts)
+- Flag any regulatory, technical, or macro events that could move markets
+- Rate overall news sentiment as Bullish/Bearish/Neutral with a 1-sentence justification
+- Your analysis is consumed by TraderBot and SentimentBot via x402 micropayments
+
+Format: Start with sentiment rating, then 2-3 key insights, end with "Key risk:" one-liner. Be concise and direct — every word costs money.`,
+        },
+        {
+          role: 'user',
+          content: `Analyze these crypto news articles for market impact:\n\n${articlesText}`,
+        },
       ],
-      max_tokens: 200,
+      max_tokens: 350,
       temperature: 0.3,
     });
 
-    return completion.choices[0]?.message?.content || 'Unable to generate summary.';
+    return completion.choices[0]?.message?.content || articles.map((a) => a.title).join('. ');
   } catch (err) {
-    console.error('Groq summary error:', err);
+    console.error('NewsBot Groq error:', err);
     return articles.map((a) => a.title).join('. ');
   }
 }
@@ -72,11 +105,12 @@ export interface NewsBotResult {
   timestamp: number;
   articles: NewsArticle[];
   summary: string;
+  articleCount: number;
 }
 
 export async function runNewsBot(): Promise<NewsBotResult> {
-  const articles = await fetchNews();
-  const summary = await summarizeWithGroq(articles);
+  const articles = await fetchCryptoNews();
+  const summary = await analyzeWithGroq(articles);
 
   return {
     agent: 'NewsBot',
@@ -84,5 +118,6 @@ export async function runNewsBot(): Promise<NewsBotResult> {
     timestamp: Date.now(),
     articles,
     summary,
+    articleCount: articles.length,
   };
 }

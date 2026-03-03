@@ -110,19 +110,32 @@ export default function OrchestrationFlow() {
           >
             <p className="text-[11px] font-semibold text-foreground-tertiary uppercase tracking-[0.08em] mb-4">Signals</p>
             {result.tradingSignals.signals.map((s, i) => (
-              <div key={i} className="flex items-center justify-between py-2">
-                <span className="text-[15px] font-medium text-foreground">{s.asset}</span>
+              <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-medium text-foreground">{s.asset}</span>
+                  {s.riskLevel && (
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                      s.riskLevel === 'LOW' ? 'text-yes bg-yes/8' : s.riskLevel === 'HIGH' ? 'text-no bg-no/8' : 'text-foreground-tertiary bg-background-secondary'
+                    }`}>{s.riskLevel}</span>
+                  )}
+                </div>
                 <span className={`text-[13px] font-semibold ${
                   s.action === 'BUY' ? 'text-yes' : s.action === 'SELL' ? 'text-no' : 'text-foreground-secondary'
                 }`}>
                   {s.action}
                 </span>
-                <span className="text-[13px] text-foreground-tertiary">{s.confidence}%</span>
+                <div className="text-right">
+                  <span className="text-[13px] text-foreground">{s.confidence}%</span>
+                  {s.timeframe && <p className="text-[9px] text-foreground-tertiary">{s.timeframe}</p>}
+                </div>
               </div>
             ))}
             <p className="text-[12px] text-foreground-tertiary mt-3">
               ${result.totalCost} USDC &middot; {result.duration}ms
             </p>
+            {result.tradingSignals.riskDisclaimer && (
+              <p className="text-[9px] text-foreground-tertiary mt-2 italic">{result.tradingSignals.riskDisclaimer}</p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAgents } from '@/hooks/useAgents';
 import { useActivity } from '@/hooks/useActivity';
 import StatCards from './StatCards';
+import QueryBar from './QueryBar';
 import AgentEconomyGraph from './AgentEconomyGraph';
 import OrchestrationFlow from './OrchestrationFlow';
 import ActivityFeed from './ActivityFeed';
@@ -59,6 +60,15 @@ export default function LiveDashboard() {
             <span key={t}>{t}</span>
           ))}
         </motion.div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="text-[14px] text-foreground-tertiary mt-4 max-w-[480px] mx-auto"
+        >
+          No API keys. No subscriptions. Pay-per-use intelligence settled on Avalanche in ~2 seconds.
+        </motion.p>
       </section>
 
       {/* Stats */}
@@ -75,6 +85,11 @@ export default function LiveDashboard() {
           avgReputation={avgReputation}
         />
       </motion.section>
+
+      {/* Query Bar */}
+      <section className="pb-8">
+        <QueryBar />
+      </section>
 
       {/* Economy + Orchestration */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-16">

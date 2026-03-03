@@ -13,14 +13,13 @@ export function useHireAgent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hireAgent = useCallback(async (endpoint: string) => {
+  const hireAgent = useCallback(async (agentId: number, endpoint: string) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
 
-    // Extract agent ID for fallback
-    const match = endpoint.match(/\/api\/agents\/(\d+)\//);
-    const agentId = match?.[1];
+    // Only attempt x402 direct payment for built-in (relative) endpoints
+    const isBuiltinEndpoint = endpoint.startsWith('/api/');
 
     try {
       if (!isConnected) {
@@ -28,8 +27,8 @@ export function useHireAgent() {
         return null;
       }
 
-      // Try x402 payment flow if wallet client is available
-      if (walletClient) {
+      // Try x402 payment flow for built-in agents with relative endpoints
+      if (walletClient && isBuiltinEndpoint) {
         try {
           const signer = walletClient.extend(publicActions);
           const fetchWithPay = wrapFetchWithPayment(
@@ -54,12 +53,7 @@ export function useHireAgent() {
         }
       }
 
-      // Fallback: demo hire endpoint
-      if (!agentId) {
-        setError('Invalid agent endpoint');
-        return null;
-      }
-
+      // Hire via unified server endpoint (works for any agent — built-in or user-deployed)
       const res = await fetch(`${X402_SERVER_URL}/api/hire/${agentId}`, {
         method: 'POST',
       });

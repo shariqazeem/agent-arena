@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/', label: 'Dashboard' },
   { href: '/agents', label: 'Agents' },
   { href: '/deploy', label: 'Deploy' },
+  { href: '/my-agents', label: 'My Agents' },
   { href: '/activity', label: 'Activity' },
 ];
 
